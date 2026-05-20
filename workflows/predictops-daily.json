@@ -1,0 +1,232 @@
+{
+  "name": "PredictOps - Daily Forecast",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-schedule-daily",
+      "name": "Daily 8AM Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/predict?horizon=7&threshold=45",
+        "authentication": "none",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "b2c3d4e5-http-predict",
+      "name": "Run Forecast",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "alert-check",
+              "leftValue": "={{ $json.alert_required }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c3d4e5f6-if-alert",
+      "name": "Alert Required?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "msg1",
+              "name": "subject",
+              "value": "PredictOps Alert: Support ticket spike forecasted",
+              "type": "string"
+            },
+            {
+              "id": "msg2",
+              "name": "message",
+              "value": "=Model {{ $json.model_version }} forecasts elevated ticket volume.\n\nReason: {{ $json.alert_reason }}\n\nNext 7 days:\n{{ $json.forecasts.map(f => f.date + ': ' + f.predicted_value).join('\\n') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d4e5f6a7-set-alert",
+      "name": "Build Alert Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        980,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Connect your notification node here\n\nReplace this sticky note with:\n- Slack\n- Email (Gmail/SMTP)\n- Microsoft Teams\n- Telegram\n\nUse fields:\n- subject\n- message",
+        "height": 220,
+        "width": 320
+      },
+      "id": "e5f6a7b8-sticky-alert",
+      "name": "Connect Notification",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1180,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "log1",
+              "name": "status",
+              "value": "Forecast completed - no alert",
+              "type": "string"
+            },
+            {
+              "id": "log2",
+              "name": "model_version",
+              "value": "={{ $json.model_version }}",
+              "type": "string"
+            },
+            {
+              "id": "log3",
+              "name": "generated_at",
+              "value": "={{ $json.generated_at }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f6a7b8c9-set-ok",
+      "name": "Log Normal Run",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        980,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8000/metrics",
+        "options": {}
+      },
+      "id": "a7b8c9d0-http-metrics",
+      "name": "Fetch Metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1240,
+        420
+      ]
+    }
+  ],
+  "connections": {
+    "Daily 8AM Trigger": {
+      "main": [
+        [
+          {
+            "node": "Run Forecast",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Forecast": {
+      "main": [
+        [
+          {
+            "node": "Alert Required?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert Required?": {
+      "main": [
+        [
+          {
+            "node": "Build Alert Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Normal Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Normal Run": {
+      "main": [
+        [
+          {
+            "node": "Fetch Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

@@ -1,0 +1,200 @@
+{
+  "name": "PredictOps - Weekly Retrain",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "b1c2d3e4-schedule-weekly",
+      "name": "Weekly Retrain Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/train",
+        "authentication": "none",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "c2d3e4f5-http-train",
+      "name": "Train Model",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "improved-check",
+              "leftValue": "={{ $json.improved }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d3e4f5a6-if-improved",
+      "name": "Model Improved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "succ1",
+              "name": "subject",
+              "value": "PredictOps: Model retrained successfully",
+              "type": "string"
+            },
+            {
+              "id": "succ2",
+              "name": "message",
+              "value": "=New model {{ $json.model_version }} promoted.\nMAPE: {{ $json.mape }}\nSamples: {{ $json.samples }}\nTrained at: {{ $json.trained_at }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e4f5a6b7-set-success",
+      "name": "Retrain Success Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        980,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "skip1",
+              "name": "subject",
+              "value": "PredictOps: Retrain skipped (no improvement)",
+              "type": "string"
+            },
+            {
+              "id": "skip2",
+              "name": "message",
+              "value": "=Candidate model {{ $json.model_version }} did not beat previous MAPE.\nCurrent MAPE: {{ $json.mape }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f5a6b7c8-set-skipped",
+      "name": "Retrain Skipped Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        980,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Connect notification node\n\nSend retrain result to Slack/Email.\n\nFields:\n- subject\n- message",
+        "height": 180,
+        "width": 280
+      },
+      "id": "a6b7c8d9-sticky-notify",
+      "name": "Connect Notification",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1180,
+        280
+      ]
+    }
+  ],
+  "connections": {
+    "Weekly Retrain Trigger": {
+      "main": [
+        [
+          {
+            "node": "Train Model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Train Model": {
+      "main": [
+        [
+          {
+            "node": "Model Improved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Model Improved?": {
+      "main": [
+        [
+          {
+            "node": "Retrain Success Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Retrain Skipped Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

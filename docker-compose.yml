@@ -1,0 +1,31 @@
+services:
+  ml-api:
+    build: .
+    container_name: predictops-ml
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./sample-data:/app/sample-data:ro
+      - ml_models:/app/models
+    restart: unless-stopped
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: predictops-n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - GENERIC_TIMEZONE=UTC
+      - TZ=UTC
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      - ml-api
+    restart: unless-stopped
+
+volumes:
+  n8n_data:
+  ml_models:
