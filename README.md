@@ -115,7 +115,7 @@ On included `support_tickets.csv` (180 days):
 ### 1. Clone & install ML service
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/predictops.git
+git clone https://github.com/devesht0226/Predictops.git
 cd predictops/ml-service
 python -m venv .venv
 
@@ -294,4 +294,4 @@ MIT — see [LICENSE](LICENSE).
 ## Author
 
 Portfolio project — **Applied ML + n8n automation**.  
-Replace `YOUR_USERNAME` in clone URL when publishing to GitHub.
+**Repository:** https://github.com/devesht0226/Predictops
